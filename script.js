@@ -29,6 +29,11 @@ function newId() {
 }
 
 // ---------- Data layer ----------
+function showAppError(msg) {
+  const el = $("appMsg");
+  if (el) el.textContent = msg ? "Error: " + msg : "";
+}
+
 async function loadTodos() {
   if (!db) {
     todos = loadLocal();
@@ -43,7 +48,7 @@ async function loadTodos() {
     .from("tasks")
     .select("id, text, completed")
     .order("created_at", { ascending: true });
-  if (error) return showMsg(error.message);
+  if (error) return showAppError(error.message);
   todos = data;
 }
 
@@ -51,11 +56,11 @@ async function addTodo() {
   const input = $("todoInput");
   const text = input.value.trim();
   if (!text) return;
-  if (db && !user) return showMsg("Sign in to add tasks.");
+  if (db && !user) return showAppError("Sign in to add tasks.");
 
   if (db) {
     const { error } = await db.from("tasks").insert({ text });
-    if (error) return showMsg(error.message);
+    if (error) return showAppError(error.message);
   } else {
     todos.push({ id: newId(), text, completed: false });
     saveLocal();
@@ -69,7 +74,7 @@ async function toggleTodo(id) {
   if (!todo) return;
   if (db) {
     const { error } = await db.from("tasks").update({ completed: !todo.completed }).eq("id", id);
-    if (error) return showMsg(error.message);
+    if (error) return showAppError(error.message);
   } else {
     todo.completed = !todo.completed;
     saveLocal();
@@ -80,7 +85,7 @@ async function toggleTodo(id) {
 async function deleteTodo(id) {
   if (db) {
     const { error } = await db.from("tasks").delete().eq("id", id);
-    if (error) return showMsg(error.message);
+    if (error) return showAppError(error.message);
   } else {
     todos = todos.filter((t) => t.id !== id);
     saveLocal();
@@ -98,6 +103,7 @@ async function importLocalTodos() {
 }
 
 async function refresh() {
+  showAppError("");
   await loadTodos();
   renderTodos();
 }
