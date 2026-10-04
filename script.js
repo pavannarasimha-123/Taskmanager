@@ -143,44 +143,87 @@ function renderTodos() {
     });
 }
 
-// ---------- Auth ----------
-function showMsg(msg) {
-  $("authMsg").textContent = msg || "";
-  if (!db) console.warn(msg);
+// ---------- Auth (login / register page) ----------
+let mode = "login"; // "login" | "register"
+
+function showMsg(msg, ok = false) {
+  const el = $("authMsg");
+  el.textContent = msg || "";
+  el.classList.toggle("success", ok);
 }
 
-function renderAuth() {
-  if (!db) return; // local mode: auth UI stays hidden
-  $("authSection").hidden = false;
-  $("authForm").hidden = !!user;
-  $("authUser").hidden = !user;
-  if (user) $("authUserEmail").textContent = user.email;
-}
-
-async function signIn() {
+function setMode(next) {
+  mode = next;
+  const reg = mode === "register";
+  $("tabLogin").classList.toggle("active", !reg);
+  $("tabRegister").classList.toggle("active", reg);
+  $("confirmField").hidden = !reg;
+  $("authConfirm").required = reg;
+  $("authPassword").autocomplete = reg ? "new-password" : "current-password";
+  $("authSubtitle").textContent = reg
+    ? "Create an account to sync your tasks"
+    : "Welcome back! Sign in to your tasks";
+  $("authSubmit").querySelector("span").textContent = reg ? "Create account" : "Login";
+  $("authSubmit").querySelector("i").className = reg
+    ? "fas fa-user-plus"
+    : "fas fa-right-to-bracket";
   showMsg("");
-  const { error } = await db.auth.signInWithPassword({
-    email: $("authEmail").value.trim(),
-    password: $("authPassword").value,
-  });
-  if (error) showMsg(error.message);
 }
 
-async function signUp() {
+function showView(which) {
+  $("authView").hidden = which !== "auth";
+  $("appView").hidden = which !== "app";
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
   showMsg("");
-  const { data, error } = await db.auth.signUp({
-    email: $("authEmail").value.trim(),
-    password: $("authPassword").value,
-  });
-  if (error) return showMsg(error.message);
-  if (!data.session) showMsg("Check your email to confirm your account, then sign in.");
+  const email = $("authEmail").value.trim();
+  const password = $("authPassword").value;
+
+  if (!email || !password) return showMsg("Enter your email and password.");
+  if (mode === "register") {
+    if (password.length < 6) return showMsg("Password must be at least 6 characters.");
+    if (password !== $("authConfirm").value) return showMsg("Passwords do not match.");
+  }
+
+  const btn = $("authSubmit");
+  btn.disabled = true;
+  try {
+    if (mode === "login") {
+      const { error } = await db.auth.signInWithPassword({ email, password });
+      if (error) showMsg(error.message);
+    } else {
+      const { data, error } = await db.auth.signUp({ email, password });
+      if (error) return showMsg(error.message);
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        return showMsg("This email is already registered. Please log in.");
+      }
+      if (!data.session) {
+        setMode("login");
+        showMsg("Account created! Check your email to confirm, then log in.", true);
+      }
+    }
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function onAuthChange(session) {
   user = session ? session.user : null;
-  renderAuth();
-  if (user) await importLocalTodos();
-  await refresh();
+  if (user) {
+    $("userEmail").textContent = user.email;
+    $("userBar").hidden = false;
+    showView("app");
+    await importLocalTodos();
+    await refresh();
+  } else {
+    todos = [];
+    renderTodos();
+    $("authPassword").value = "";
+    $("authConfirm").value = "";
+    showView("auth");
+  }
 }
 
 // ---------- Events ----------
@@ -199,17 +242,22 @@ document.querySelector(".filters").addEventListener("click", (e) => {
 
 // ---------- Init ----------
 if (db) {
-  $("signInBtn").addEventListener("click", signIn);
-  $("signUpBtn").addEventListener("click", signUp);
-  $("signOutBtn").addEventListener("click", () => db.auth.signOut());
-  $("authPassword").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") signIn();
+  $("tabLogin").addEventListener("click", () => setMode("login"));
+  $("tabRegister").addEventListener("click", () => setMode("register"));
+  $("authFormEl").addEventListener("submit", handleAuthSubmit);
+  $("logoutBtn").addEventListener("click", () => db.auth.signOut());
+  $("togglePw").addEventListener("click", () => {
+    const pw = $("authPassword");
+    const show = pw.type === "password";
+    pw.type = show ? "text" : "password";
+    $("togglePw").querySelector("i").className = show ? "fas fa-eye-slash" : "fas fa-eye";
   });
   db.auth.onAuthStateChange((_event, session) => {
     // defer to avoid calling Supabase inside its own auth callback
     setTimeout(() => onAuthChange(session), 0);
   });
-  renderAuth();
 } else {
+  // Local-only mode: no login needed
+  showView("app");
   refresh();
 }

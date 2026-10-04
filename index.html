@@ -15,27 +15,58 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="container">
+    <!-- LOGIN / REGISTER PAGE -->
+    <div class="container auth-container" id="authView" hidden>
+      <div class="header">
+        <i class="fas fa-tasks task-icon"></i>
+        <h1>TaskMaster Pro</h1>
+        <p class="subtitle" id="authSubtitle">Welcome back! Sign in to your tasks</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="tabLogin">Login</button>
+        <button type="button" class="auth-tab" id="tabRegister">Register</button>
+      </div>
+
+      <form id="authFormEl" class="auth-card" novalidate>
+        <label class="field">
+          <i class="fas fa-envelope"></i>
+          <input type="email" id="authEmail" placeholder="Email" autocomplete="email" required />
+        </label>
+        <label class="field">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="authPassword" placeholder="Password" autocomplete="current-password" required />
+          <button type="button" class="toggle-pw" id="togglePw" aria-label="Show password">
+            <i class="fas fa-eye"></i>
+          </button>
+        </label>
+        <label class="field" id="confirmField" hidden>
+          <i class="fas fa-lock"></i>
+          <input type="password" id="authConfirm" placeholder="Confirm password" autocomplete="new-password" />
+        </label>
+        <p id="authMsg" class="auth-msg" role="alert"></p>
+        <button type="submit" class="add-btn auth-submit" id="authSubmit">
+          <i class="fas fa-right-to-bracket"></i>
+          <span>Login</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- TASK APP -->
+    <div class="container" id="appView" hidden>
+      <div class="user-bar" id="userBar" hidden>
+        <span><i class="fas fa-user"></i> <span id="userEmail"></span></span>
+        <button type="button" class="logout-btn" id="logoutBtn">
+          <i class="fas fa-right-from-bracket"></i> Logout
+        </button>
+      </div>
+
       <div class="header">
         <i class="fas fa-tasks task-icon"></i>
         <h1>TaskMaster Pro</h1>
         <p class="subtitle">
           Your Personal Task Management Solution <i class="fas fa-star"></i>
         </p>
-      </div>
-
-      <div id="authSection" class="auth-section" hidden>
-        <div id="authForm" class="auth-form">
-          <input type="email" id="authEmail" placeholder="Email" autocomplete="email" />
-          <input type="password" id="authPassword" placeholder="Password (min 6 chars)" autocomplete="current-password" />
-          <button id="signInBtn" class="auth-btn primary">Sign in</button>
-          <button id="signUpBtn" class="auth-btn">Sign up</button>
-        </div>
-        <div id="authUser" class="auth-user" hidden>
-          <span id="authUserEmail"></span>
-          <button id="signOutBtn" class="auth-btn">Sign out</button>
-        </div>
-        <p id="authMsg" class="auth-msg"></p>
       </div>
 
       <div class="input-section">
